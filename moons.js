@@ -73,7 +73,7 @@ async function deleteMoon(event) {
     const inputs = {
       moonID: 1
     }
-  
+
     const response = await fetch("http://localhost:8080", {
       method: "DELETE",
       mode: "cors",
@@ -82,7 +82,7 @@ async function deleteMoon(event) {
       },
       body: JSON.stringify(inputs)
     });
-  
+
     return response.json();
   }
 
