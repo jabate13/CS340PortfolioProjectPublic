@@ -20,13 +20,9 @@ app.set('port', 8451);
 app.set('mysql', mysql);
 app.use('/systems', require('./systems.js'));
 app.use('/', express.static('public'));
-/*
 app.use('/stars', require('./stars.js'));
 app.use('/planets', require('./planets.js'));
-app.use('/moons', express.static('moons.js'));
-app.use('/', express.static('public'));
-*/
-
+app.use('/moons', require('./moons.js'));
 
 app.use(function(req, res){
   res.status(404);

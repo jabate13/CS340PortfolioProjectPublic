@@ -48,6 +48,7 @@ module.exports = function(){
   });
 
   /* Route to delete a system from the table */
+  
   router.delete('/:solarSystemID', function(req, res){
     var mysql = req.app.get('mysql');
     var sqlString = "DELETE FROM SolarSystems WHERE solarSystemID = ?";
