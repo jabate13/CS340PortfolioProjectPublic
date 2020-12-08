@@ -41,6 +41,24 @@ module.exports = function(){
     }
   });
 
+  router.post('/moon', function(req, res){
+    var context = {};
+    context.jsscripts = ['deleteSystem.js']
+    var mysql = req.app.get('mysql');
+    var sqlString = "SELECT moonID, name, position, planetID FROM Moons WHERE name = ?";
+    var inserts = [req.body.name];
+    sql = mysql.pool.query(sqlString, inserts, function(error, results, fields) {
+      if (error) {
+        console.log(error)
+        res.write(JSON.stringify(error));
+        res.status(400);
+        res.send();
+      }
+      context.moons = results;
+      res.render('moons.handlebars', context)
+    })
+  })
+
   /* Add a new moon to the table, then redirects to load page again*/
 
   router.post('/', function(req, res){

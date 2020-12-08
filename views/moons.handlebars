@@ -36,6 +36,17 @@
 </div>
 
   <div class="container">
+    <h1>Search for a Moon by name</h1>
+    <form id ="searchForm" class="searchForm" action="/moons/moon" method="POST">
+      <div class="form-group">
+          <label for="inputName">Name</label>
+          <input required type="text" class="form-control" id="inputName" aria-describedby="nameHelp" placeholder="Enter name" name="name">
+        </div>
+          <button type="submit" class="btn btn-primary">Submit</button>
+    </form>
+  </div>
+
+  <div class="container">
     <h2>"Select" for Moons table</h2>
     <table>
       <thead>
