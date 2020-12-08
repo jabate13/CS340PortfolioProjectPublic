@@ -1,89 +1,98 @@
-// Trigger submitMoon function when Submit button clicked
-const addMoonForm = document.getElementById("addMoon");
-addMoonForm.addEventListener("submit", submitMoon);
+module.exports = function(){
+  var express = require('express');
+  var router = express.Router();
 
-// Capture inputs for add moon form, POST to server
-async function submitMoon(event){
-  event.preventDefault();
-  const name = document.getElementById("inputName").value;
-  const position = document.getElementById("inputPosition").value;
-  const size = document.getElementById("inputSize").value;
-  const color = document.getElementById("inputColor").value;
-  const parentSystem = document.getElementById("inputSolarSystem").value;
-  const parentPlanetsSelect = document.getElementById("inputParentPlanet");
-
-  const parentPlanets = [...parentPlanetsSelect.options].filter(option => option.selected).map(option => option.value);
-
-  const inputs = {
-    name: name,
-    position: position,
-    size: size,
-    color: color,
-    parentSystem: parentSystem,
-    parentPlanets: parentPlanets
-  }
-
-  const response = await fetch("http://localhost:8080", {
-    method: "POST",
-    mode: "cors",
-    headers: {
-      "Content-Type": "application/json"
-    },
-    body: JSON.stringify(inputs)
-  });
-
-  return response.json();
-}
-
-// Trigger searchMoon function when Submit button clicked
-const searchMoonForm = document.getElementById("searchForm");
-searchMoonForm.addEventListener("submit", searchMoon);
-
-// Capture inputs for add moon form, POST to server
-async function searchMoon(event){
-  event.preventDefault();
-  const name = document.getElementById("inputName").value;
-
-  const inputs = {
-    name: name
-  }
-
-  const response = await fetch("http://localhost:8080", {
-    method: "POST",
-    mode: "cors",
-    headers: {
-      "Content-Type": "application/json"
-    },
-    body: JSON.stringify(inputs)
-  });
-
-  return response.json();
-}
-
-// Trigger deleteMoon function when Delete button clicked, use event delegation
-// to pass event listener function to child button elements
-const moonsList = document.getElementById("moonsList");
-moonsList.addEventListener("click", deleteMoon);
-
-// Send DELETE request to server
-async function deleteMoon(event) {
-  event.preventDefault();
-
-  if (event.target && event.target.nodeName == "BUTTON") {
-    const inputs = {
-      moonID: 1
-    }
-  
-    const response = await fetch("http://localhost:8080", {
-      method: "DELETE",
-      mode: "cors",
-      headers: {
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify(inputs)
+  function getMoons(res, mysql, context, complete){
+    mysql.pool.query("SELECT moonID, name, position, planetID FROM Moons", function(error, results, fields){
+      if(error){
+        res.write(JSON.stringify(error));
+        res.end();
+      }
+      context.moons = results;
+      complete();
     });
-  
-    return response.json();
-  }
+  };
 
-}
+  function getPlanets(res, mysql, context, complete){
+    mysql.pool.query("SELECT planetID, name, position, color, relativeSize, solarSystemID FROM Planets", function(error, results, fields){
+      if(error){
+        res.write(JSON.stringify(error));
+        res.end();
+      }
+      context.planets = results;
+      complete();
+    });
+  };
+
+  /*Display all of the planets in the table*/
+
+  router.get('/', function(req, res){
+    var callbackCount = 0;
+    var context = {};
+    context.jsscripts = ['deleteSystem.js']
+    var mysql = req.app.get('mysql');
+    getMoons(res, mysql, context, complete);
+    getPlanets(res, mysql, context, complete);
+    function complete(){
+      callbackCount++;
+      if(callbackCount >= 2){
+        res.render('moons.handlebars', context);
+      }
+    }
+  });
+
+  router.post('/moon', function(req, res){
+    var context = {};
+    context.jsscripts = ['deleteSystem.js']
+    var mysql = req.app.get('mysql');
+    var sqlString = "SELECT moonID, name, position, planetID FROM Moons WHERE name = ?";
+    var inserts = [req.body.name];
+    sql = mysql.pool.query(sqlString, inserts, function(error, results, fields) {
+      if (error) {
+        console.log(error)
+        res.write(JSON.stringify(error));
+        res.status(400);
+        res.send();
+      }
+      context.moons = results;
+      res.render('moons.handlebars', context)
+    })
+  })
+
+  /* Add a new moon to the table, then redirects to load page again*/
+
+  router.post('/', function(req, res){
+    console.log(req.body)
+    var mysql = req.app.get('mysql');
+    var sqlString = "INSERT INTO Moons (name, position, planetID) VALUES (?, ?, ?)";
+    var inserts = [req.body.name, req.body.position, req.body.planetID];
+    sql = mysql.pool.query(sqlString, inserts, function(error, results, fields){
+      if(error){
+        console.log(JSON.stringify(error));
+        res.end();
+      }else{
+        res.redirect('/moons');
+      }
+    });
+  });
+
+  /* Route to delete a moon from the table */
+
+  router.delete('/:moonID', function(req, res){
+    var mysql = req.app.get('mysql');
+    var sqlString = "DELETE FROM Moons WHERE moonID = ?";
+    var inserts = [req.params.moonID];
+    sql = mysql.pool.query(sqlString, inserts, function(error, results, fields){
+      if(error){
+        console.log(error)
+        res.write(JSON.stringify(error));
+        res.status(400);
+        res.send();
+      }else{
+        res.status(202).end();
+      }
+    })
+  })
+
+  return router;
+}();

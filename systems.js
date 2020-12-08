@@ -1,48 +1,69 @@
-// Trigger submitSystem function when Submit button clicked
-const addSystemForm = document.getElementById("addSystem");
-addSystemForm.addEventListener("submit", submitSystem);
+module.exports = function(){
+  var express = require('express');
+  var router = express.Router();
 
-// Capture inputs for add system form, POST to server
-async function submitSystem(event){
-  event.preventDefault();
-  const name = document.getElementById("inputName").value;
+  function getSystems(res, mysql, context, complete){
+    mysql.pool.query("SELECT solarSystemID, name FROM SolarSystems", function(error, results, fields){
+      if(error){
+        res.write(JSON.stringify(error));
+        res.end();
+      }
+      context.systems = results;
+      complete();
+    });
+  };
 
-  const inputs = {
-    name: name
-  }
 
-  const response = await fetch("http://localhost:8080", {
-    method: "POST",
-    mode: "cors",
-    headers: {
-      "Content-Type": "application/json"
-    },
-    body: JSON.stringify(inputs)
+  /*Display all of the systems in the table*/
+
+  router.get('/', function(req, res){
+    var callbackCount = 0;
+    var context = {};
+    context.jsscripts = ['deleteSystem.js']
+    var mysql = req.app.get('mysql');
+    getSystems(res, mysql, context, complete);
+    function complete(){
+      callbackCount++;
+      if(callbackCount >= 1){
+        res.render('systems.handlebars', context);
+      }
+    }
   });
 
-  return response.json();
-}
+  /* Add a new Solar System tot he table, then redirects to load page again*/
 
-// Trigger deleteSystem function when Delete button clicked
-const deleteSystemButton = document.getElementById("deleteSystem");
-deleteSystemButton.addEventListener("click", deleteSystem);
-
-// Send DELETE request to server
-async function deleteSystem(event) {
-  event.preventDefault();
-
-  const inputs = {
-    systemID: 1
-  }
-
-  const response = await fetch("http://localhost:8080", {
-    method: "DELETE",
-    mode: "cors",
-    headers: {
-      "Content-Type": "application/json"
-    },
-    body: JSON.stringify(inputs)
+  router.post('/', function(req, res){
+    console.log(req.body)
+    var mysql = req.app.get('mysql');
+    var sqlString = "INSERT INTO SolarSystems (name) VALUES (?)";
+    var inserts = [req.body.name];
+    sql = mysql.pool.query(sqlString, inserts, function(error, results, fields){
+      if(error){
+        console.log(JSON.stringify(error));
+        res.end();
+      }else{
+        res.redirect('/systems');
+      }
+    });
   });
 
-  return response.json();
-}
+  /* Route to delete a system from the table */
+  
+  router.delete('/:solarSystemID', function(req, res){
+    var mysql = req.app.get('mysql');
+    var sqlString = "DELETE FROM SolarSystems WHERE solarSystemID = ?";
+    var inserts = [req.params.solarSystemID];
+    sql = mysql.pool.query(sqlString, inserts, function(error, results, fields){
+      if(error){
+        console.log(error)
+        res.write(JSON.stringify(error));
+        res.status(400);
+        res.send();
+      }else{
+        res.status(202).end();
+      }
+    })
+  })
+
+  return router;
+}();
